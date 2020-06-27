@@ -1,8 +1,11 @@
+#! /usr/bin/env python3
 import boto3
 import botocore
 from datetime import datetime, timedelta, timezone
 
 dry_run = False
+deleted = 0
+considered = 0
 
 daily_retention_limit = datetime.now(timezone.utc) - timedelta(days=30)
 monthly_retention_limit = datetime.now(timezone.utc) - timedelta(days=365)
@@ -14,6 +17,7 @@ ec2 = boto3.client('ec2')
 snapshots = ec2.describe_snapshots(OwnerIds=['self'])
 
 for snapshot in snapshots['Snapshots']:
+    considered += 1
     snapshot_time = snapshot['StartTime']
     snapshot_id = snapshot['SnapshotId']
     try:
@@ -22,12 +26,14 @@ for snapshot in snapshots['Snapshots']:
             if snapshot_time < monthly_retention_limit:
                 print(f'Deleting snapshot {snapshot_id} as {snapshot_time} is older than monthly retention limit')
                 ec2.delete_snapshot(SnapshotId=snapshot_id, DryRun=dry_run)
+                deleted += 1
             else:
                 if snapshot_time.day == 1:
                     print(f'Retaining snapshot {snapshot_id} as {snapshot_time} falls on first day of the month.')
                 else:
                     print(f'Deleting snapshot {snapshot_id} as {snapshot_time} does not fall on first day of the month.')
                     ec2.delete_snapshot(SnapshotId=snapshot_id, DryRun=dry_run)
+                    deleted += 1
         else:
             print(f'Snapshot {snapshot_id} is within retention limit (snapshot time: {snapshot_time}.)')
     except botocore.exceptions.ClientError as error:
@@ -37,3 +43,4 @@ for snapshot in snapshots['Snapshots']:
         else:
             print (error)
             raise error
+print(f"Purge completed. Deleted {deleted} snapshots from {considered} considered.")
