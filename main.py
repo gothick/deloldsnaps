@@ -7,8 +7,8 @@ dry_run = False
 deleted = 0
 considered = 0
 
-daily_retention_limit = datetime.now(timezone.utc) - timedelta(days=30)
-monthly_retention_limit = datetime.now(timezone.utc) - timedelta(days=365)
+daily_retention_limit = datetime.now(timezone.utc) - timedelta(days=14)
+monthly_retention_limit = datetime.now(timezone.utc) - timedelta(days=90)
 print('Deleting ec2 snapshots older than:')
 print(f'  Daily retention limit: {daily_retention_limit}')
 print(f'  Monthly retention limit: {monthly_retention_limit}')
